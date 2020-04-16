@@ -234,7 +234,7 @@ def metricVOLsDir(args, io):
         io.summary = 'Storage Path[%s]' % surl
         log.debug('Storage Path[%s]' % surl)
         try:
-            ctx.listdir(surl)
+            ctx.listdir(str(surl))
             io.summary = 'Directory successfully listed'
             io.status = nap.OK
         except gfal2.GError as e:
@@ -311,7 +311,7 @@ def metricVOPut(args, io):
         stMsg = 'File was%s copied to SRM.'
 
         try:
-            ctx.filecopy(params, "file://" + src_file, dest_file)
+            ctx.filecopy(params, "file://" + str(src_file), str(dest_file))
             total_transfer = datetime.datetime.now() - start_transfer
             log.debug('Transfer Duration: %s' % str(total_transfer))
             io.summary = stMsg % '' + " Transfer time: " + str(total_transfer)
@@ -351,7 +351,7 @@ def metricVOLs(args, io):
     for surl in srms:
         log.debug('listing [%s]' % surl)
         try:
-            statp = ctx.stat(surl)
+            statp = ctx.stat(str(surl))
             log.debug("stat: " + str(statp).replace('\n', ', '))
             io.summary = 'ok;'
             io.status = nap.OK
@@ -389,7 +389,7 @@ def metricVOGetTURLs(ags, io):
                 replicas = src_file
             else:
                 log.debug('Using gfal2.xattr.')
-                replicas = ctx.getxattr(src_file, 'user.replicas')
+                replicas = ctx.getxattr(str(src_file), 'user.replicas')
 
             log.debug('proto: %s OK' % protocol)
             log.debug('replicas: %s' % replicas)
@@ -454,7 +454,7 @@ def metricVOGet(args, io):
         log.debug('StartTime of the transfer: %s' % str(start_transfer))
 
         try:
-            ctx.filecopy(params, src_file, dest_file)
+            ctx.filecopy(params, str(src_file), str(dest_file))
             if filecmp.cmp(_fileTest, _fileTestIn):
                 # Files match
                 io.status = nap.OK
@@ -501,7 +501,7 @@ def metricVODel(args, io):
 
         log.debug('Deleting: %s' % src_file)
         try:
-            ctx.unlink(src_file)
+            ctx.unlink(str(src_file))
             io.status = nap.OK
             io.summary = stMsg % ''
         except gfal2.GError as e:
