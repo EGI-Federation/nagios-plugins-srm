@@ -267,7 +267,7 @@ def metricVOPut(args, io):
             else:
                 io.summary = stMsg % ' NOT'
         except Exception as e:
-           io.set_status(
+            io.set_status(
                 nap.UNKNOWN, 'problem invoking gfal2 filecopy(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
 
