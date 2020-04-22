@@ -12,11 +12,12 @@ import time
 import gridutils
 import tempfile
 import datetime
-import logging
+
 import filecmp
 import gfal2
 import nap.core
 import shutil
+import os
 
 try:
     from urlparse import urlparse
@@ -26,38 +27,25 @@ except BaseException:
 
 PROBE_VERSION = "v0.0.1"
 
-# logging
-log = logging.getLogger("SRM-PROBE")
-log.setLevel(logging.DEBUG)
-formatter = logging.Formatter(fmt='%(message)s')
-fh = logging.StreamHandler(stream=sys.stdout)
-fh.setFormatter(formatter)
-log.addHandler(fh)
 
 # ########################################################################### #
-app = nap.core.Plugin(description="ARGO SRM endpoint probe",
+app = nap.core.Plugin(description="NAGIOS SRM probe",
                       version=PROBE_VERSION)
-app.add_argument("-E", "--endpoint", help="endpoint")
-app.add_argument("-VO", "--voname", help="voname")
-app.add_argument("-4", "--ipv4", help="use IP v4 protocol for probing",
-                 action="store_true")
-app.add_argument("-6", "--ipv6", help="use IP v6 protocol for probing",
-                 action="store_true")
-app.add_argument("-X", "--x509", help="location of x509 certificate file")
-app.add_argument("-srm", "--srmv", help="srm version")
-app.add_argument("-l", "--ldap-uri", help="ldap-uri")
-app.add_argument("-timeout", "--se-timeout", help="se timeout")
+app.add_argument("-E", "--endpoint", help="SRM base SURL to test")
+app.add_argument("-VO", "--voname", help="VO name, needed for interaction with BDII", default="ops")
+app.add_argument("--srmv",  help="srm version to use", default='2')
+app.add_argument("--ldap-url", help="LDAP URL", dest="ldap_url", default="ldap://lcg-bdii.cern.ch:2170")
+app.add_argument("--se-timeout",dest="se_timeout", type=int, help="storage operations timeout", default=60)
 
 
 # Reasonable defaults for timeouts
 LCG_GFAL_BDII_TIMEOUT = 10
 
 gfal2.set_verbose(gfal2.verbose_level.debug)
-# Service version(s)
-svcVers = ['1', '2']  # NOT USED YET
-svcVer = '2'
-ldap_url = "ldap://lcg-bdii.cern.ch:2170"
 
+# Service version(s)
+svcVers = ['1','2']  
+svcVer = '2'
 workdir_metric = tempfile.mkdtemp()
 
 # files and patterns
@@ -67,75 +55,43 @@ _fileSRMPattern = 'testfile-put-%s-%s.txt'  # time, uuid
 
 _voInfoDictionary = {}
 
-voName = "dteam"
-
 # GFAL version
 gfal2_ver = "gfal2 " + gfal2.get_version()
 
-
-def parse_args(args):
-    pass
-    # for o,v in args:
-    #     if o in ('--srmv'):
-    #         if v in svcVers:
-    #             svcVer = str(v)
-    #         else:
-    #             errstr = '--srmv must be one of '+\
-    #                 ', '.join([x for x in svcVers])+'. '+v+' given.'
-    #             raise getopt.GetoptError(errstr)
-    #     elif o in ('--ldap-uri'):
-    #         [host, port] = gridutils.parse_uri(v)
-    #         if port == None or port == '':
-    #             port = '2170'
-    #         _ldap_url = 'ldap://'+host+':'+port
-    #         os.environ['LCG_GFAL_INFOSYS'] = host+':'+port
-    #     elif o in ('--ldap-timeout'):
-    #         _timeouts['ldap_timelimit'] = int(v)
-    #     elif o in ('--se-timeout'):
-    #         _timeouts['srm_connect'] = int(v)
-
+def parse_args(args, io):
+    
+    if args.srmv in svcVers:
+        svcVer = str(args.srmv)
+    else:
+        errstr = 'srmv parameter must be one of '+ \
+                ', '.join([x for x in svcVers])+'. '+args.srmv+' given'
+        io.set_status(nap.CRITICAL,errstr)
+        return  1  
+    os.environ['LCG_GFAL_INFOSYS'] = args.ldap_url
 
 def query_bdii(ldap_filter, ldap_attrlist, ldap_url=''):
     'Local wrapper for gridutils.query_bdii()'
-
-    ldap_url = ldap_url
-
-    log.debug('Query BDII.')
-    log.debug('''Parameters:
-ldap_url: %s
-ldap_timelimit: %i
-ldap_filter: %s
-ldap_attrlist: %s''' % (ldap_url, LCG_GFAL_BDII_TIMEOUT, ldap_filter, ldap_attrlist))
-
-    log.debug('Querying BDII %s' % ldap_url)
     rc, qres = gridutils.query_bdii(ldap_filter, ldap_attrlist,
                                     ldap_url=ldap_url,
                                     ldap_timelimit=LCG_GFAL_BDII_TIMEOUT)
-    log.debug(qres)
+
     return rc, qres
 
-
-@app.metric(seq=1, metric_name="GetSURLs", passive=False)
-def getSURL(args, io):
-    # working directory for metrics
-    log.debug(workdir_metric)
-    parse_args(args)
-
+def getSURLFromBDII(args,io):
     ldap_f = "(|(&(GlueChunkKey=GlueSEUniqueID=%s)(|(GlueSAAccessControlBaseRule=%s)(GlueSAAccessControlBaseRule=VO:%s)))" \
         + "(&(GlueChunkKey=GlueSEUniqueID=%s)(|(GlueVOInfoAccessControlBaseRule=%s)(GlueVOInfoAccessControlBaseRule=VO:%s)))" \
         + "(&(GlueServiceUniqueID=*://%s*)(GlueServiceVersion=%s.*)(GlueServiceType=srm*)))"
-    ldap_filter = ldap_f % (args.endpoint, voName, voName, args.endpoint, voName, voName, args.endpoint, svcVer)
+    ldap_filter = ldap_f % (args.hostname, args.voname, args.voname, args.hostname, args.voname, args.voname, args.hostname, svcVer)
     ldap_attrlist = ['GlueServiceEndpoint', 'GlueSAPath', 'GlueVOInfoPath']
 
-    rc, qres = query_bdii(ldap_filter, ldap_attrlist, ldap_url)
+    rc, qres = query_bdii(ldap_filter, ldap_attrlist, args.ldap_url)
     if not rc:
         if qres[0] == 0:  # empty set
             io.status = nap.CRITICAL
         else:  # all other problems
             io.status = nap.UNKNOWN
-        log.debug(qres[2])
         io.summary = "Error querying the BDII"
-        return
+        return []
 
     res = {}
     for k in ldap_attrlist:
@@ -155,8 +111,8 @@ def getSURL(args, io):
     if not res[k]:
         io.set_status(nap.CRITICAL,
                       "%s is not published for %s in %s" %
-                      (k, args.endpoint, ldap_url))
-        return
+                      (k, args.endpoint, args.ldap_url))
+        return []
     elif len(res[k]) > 1:
         io.set_status(
             nap.CRITICAL,
@@ -169,24 +125,22 @@ def getSURL(args, io):
             ": " +
             ', '.join(
                 res[k]))
-        return
+        return[]
     else:
         endpoint = res[k][0]
 
-    log.debug('GlueServiceEndpoint: %s' % endpoint)
-
     if res['GlueVOInfoPath']:
         storpaths = res['GlueVOInfoPath']
-        log.debug('GlueVOInfoPath: %s' % ', '.join(storpaths))
+        
     elif res['GlueSAPath']:
         storpaths = res['GlueSAPath']
-        log.debug('GlueSAPath: %s' % ', '.join(storpaths))
+        
     else:
         # GlueSAPath or GlueVOInfoPath is not published
         io.set_status(
             nap.CRITICAL, "GlueVOInfoPath or GlueSAPath not published for %s in %s" %
-            (res['GlueServiceEndpoint'][0], ldap_url))
-        return
+            (res['GlueServiceEndpoint'][0], args.ldap_url))
+        return []
 
     eps = [
         endpoint.replace(
@@ -195,14 +149,29 @@ def getSURL(args, io):
             1) +
         '?SFN=' +
         sp for sp in storpaths]
-    log.debug('SRM endpoint(s) to test:')
-    log.debug('\n'.join(eps).strip('\n'))
 
-    log.debug('Saving endpoints to cache')
+    return eps
 
+
+@app.metric(seq=1, metric_name="GetSURLs", passive=False)
+def getSURLs(args, io):
+    """
+    Use provided endpoint as SURL or use the BDII to retrieve the Storage Area and build the SURLs to test
+    """
+    if  parse_args(args,io):
+        return 
+    eps =[]
+    if args.endpoint is None:
+        eps = getSURLFromBDII(args,io)
+    else:
+        eps.append(args.endpoint)
+    if len(eps) == 0:
+        io.summary = 'Fail to retrieve SURLs to test'
+        io.status = nap.CRITICAL
+        return
     for ep in eps:
         _voInfoDictionary[ep] = {}
-    io.summary = 'SURL successfully stored'
+    io.summary = 'SURLs successfully retrieved'
     io.status = nap.OK
 
 
@@ -216,35 +185,27 @@ def metricVOLsDir(args, io):
         for srm in _voInfoDictionary.keys():
             srms.append(srm)
         if not srms:
-            io.set_status(nap.CRITICAL, 'No SRM endpoints found in cache')
+            io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
             return
     except Exception as e:
-        log.debug('ERROR: %s' % str(e))
         io.set_status('UNKNOWN', 'Error reading SRM to test')
         return
-
-    log.debug('Using gfal2 listdir()')
 
     # Instantiate gfal2
     ctx = gfal2.creat_context()
 
-    log.debug('Listing storage url(s).')
-
-    for surl in srms:
-        io.summary = 'Storage Path[%s]' % surl
-        log.debug('Storage Path[%s]' % surl)
+    for surl in srms: 
         try:
             ctx.listdir(str(surl))
-            io.summary = 'Directory successfully listed'
+            io.summary = 'Storage Path[%s] Directory successfully listed' % surl
             io.status = nap.OK
         except gfal2.GError as e:
             er = e.message
             io.status = nap.CRITICAL
             if er:
-                io.summary = '%d [Err:%s];' % (io.status, str(er))
+                io.summary = '[Err:%s];' %  str(er)
             else:
-                io.summary = '%d' % io.status
-            log.debug('ERROR: %s\n' % (e.message))
+                io.summary = 'Error'
         except Exception as e:
             io.set_status(
                 nap.UNKNOWN, 'problem invoking gfal2 listdir(): %s:%s' %
@@ -255,15 +216,11 @@ def metricVOLsDir(args, io):
 def metricVOPut(args, io):
     """Copy a local file to the SRM into space area(s) defined by VO."""
 
-    def event_callback(event):
-        log.debug(
-            "[%s] %s %s %s" %
-            (event.timestamp,
-             event.domain,
-             event.stage,
-             event.description))
 
-    log.debug(gfal2_ver)
+    if len(_voInfoDictionary.keys()) == 0:
+        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        return
+
     # multiple 'SAPath's are possible
     dest_files = []
     # generate source file
@@ -280,10 +237,10 @@ def metricVOPut(args, io):
             dest_files.append(srmendpt + '/' + fn)
             _voInfoDictionary[srmendpt]['fn'] = fn
         if not dest_files:
-            io.set_status(nap.CRITICAL, 'No SRM endpoints found in cache')
+            io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+            return
     except IOError as e:
-        log.debug('ERROR: %s' % str(e))
-        return ('UNKNOWN', 'Error creating source file')
+        io.set_status(nap.CRITICAL, 'Error creating source file')
 
     # Instantiate gfal2
     ctx = gfal2.creat_context()
@@ -292,28 +249,14 @@ def metricVOPut(args, io):
         # Set transfer parameters
         params = ctx.transfer_parameters()
         params.create_parent = True
-        params.timeout = 30
-        params.event_callback = event_callback
-
-        log.debug('VOPut: Copy file using gfal.filecopy().')
-
-        log.debug('''Parameters:
- source: %s
- dest: %s
- src_spacetoken: %s
- dst_spacetoken: %s
- timeout: %s''' % (src_file, dest_file, params.src_spacetoken,
-                   params.dst_spacetoken, params.timeout))
-
+        params.timeout = args.se_timeout
         start_transfer = datetime.datetime.now()
-        log.debug('StartTime of the transfer: %s' % str(start_transfer))
 
         stMsg = 'File was%s copied to SRM.'
 
         try:
             ctx.filecopy(params, "file://" + str(src_file), str(dest_file))
             total_transfer = datetime.datetime.now() - start_transfer
-            log.debug('Transfer Duration: %s' % str(total_transfer))
             io.summary = stMsg % '' + " Transfer time: " + str(total_transfer)
             io.status = nap.OK
         except gfal2.GError as e:
@@ -323,17 +266,19 @@ def metricVOPut(args, io):
                 io.summary = stMsg % (' NOT') + ' [Err:%s]' % str(er)
             else:
                 io.summary = stMsg % ' NOT'
-                log.debug('ERROR: %s' % str(e))
         except Exception as e:
-            io.status = nap.UNKNOWN
-            io.summary = stMsg % ' NOT'
-            log.debug('ERROR: %s:%s' % (str(e), sys.exc_info()[0]))
+           io.set_status(
+                nap.UNKNOWN, 'problem invoking gfal2 filecopy(): %s:%s' %
+                (str(e), sys.exc_info()[0]))
 
 
 @app.metric(seq=4, metric_name="VOLs", passive=False)
 def metricVOLs(args, io):
     """Stat (previously copied) file(s) on the SRM."""
-    log.debug(gfal2_ver)
+
+    if len(_voInfoDictionary.keys()) == 0:
+        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        return
 
     srms = []
 
@@ -342,27 +287,23 @@ def metricVOLs(args, io):
         dest_file = srmendpt + '/' + dest_filename
         srms.append(dest_file)
 
-    log.debug('Using gfal2.stat().')
-    log.debug('Stating file(s).')
-
     # Instantiate gfal2
     ctx = gfal2.creat_context()
 
     for surl in srms:
-        log.debug('listing [%s]' % surl)
         try:
             statp = ctx.stat(str(surl))
-            log.debug("stat: " + str(statp).replace('\n', ', '))
-            io.summary = 'ok;'
+
+            io.summary = 'File successfully listed'
             io.status = nap.OK
         except gfal2.GError as e:
             er = e.message
             io.status = nap.CRITICAL
             if er:
-                io.summary = '%d [Err:%s];' % (io.status, str(er))
+                io.summary = '[Err:%s];' % str(er)
             else:
-                io.summary = '%d;' % io.status
-            log.debug('ERROR: %s' % e.message)
+                io.summary = 'Error'
+       
         except Exception as e:
             io.set_status(
                 nap.UNKNOWN, 'problem invoking gfal2 stat(): %s:%s' %
@@ -373,8 +314,9 @@ def metricVOLs(args, io):
 def metricVOGetTURLs(ags, io):
     """Get Transport URLs for the file copied to storage"""
 
-    log.debug(gfal2_ver)
-
+    if len(_voInfoDictionary.keys()) == 0:
+        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        return
     # Instantiate gfal2
     ctx = gfal2.creat_context()
 
@@ -388,36 +330,32 @@ def metricVOGetTURLs(ags, io):
                 # If protocol is gsiftp, it's already a transport URL
                 replicas = src_file
             else:
-                log.debug('Using gfal2.xattr.')
                 replicas = ctx.getxattr(str(src_file), 'user.replicas')
 
-            log.debug('proto: %s OK' % protocol)
-            log.debug('replicas: %s' % replicas)
             io.summary = 'protocol OK-[%s]' % protocol
             io.status = nap.OK
 
         except gfal2.GError as e:
             io.status = nap.CRITICAL
-            io.summary = 'protocol FAILED-[%s]' % protocol
-            log.debug('error: %s' % e.message)
+            er = e.message
+            if er:
+                io.summary = 'protocol FAILED-[%s]' % protocol + ' [Err:%s]' % str(er)
+            else:
+                io.summary = 'protocol FAILED-[%s]' % protocol
         except Exception as e:
-            io.status = nap.UNKNOWN
-            log.debug('ERROR: %s\n%s' % (str(e), sys.exc_info()[0]))
-
+            io.set_status(
+                nap.UNKNOWN, 'problem invoking gfal2 getxattr(): %s:%s' %
+                (str(e), sys.exc_info()[0]))
+     
 
 @app.metric(seq=6, metric_name="VOGet", passive=False)
 def metricVOGet(args, io):
     """Copy given remote file(s) from SRM to a local file."""
 
-    def event_callback(event):
-        log.debug(
-            "[%s] %s %s %s" %
-            (event.timestamp,
-             event.domain,
-             event.stage,
-             event.description))
 
-    log.debug(gfal2_ver)
+    if len(_voInfoDictionary.keys()) == 0:
+        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        return
 
     # Instantiate gfal2
     ctx = gfal2.creat_context()
@@ -429,29 +367,15 @@ def metricVOGet(args, io):
 
         dest_file = 'file://' + _fileTestIn
 
-        log.debug('Source: %s' % src_file)
-        log.debug('Destination: %s' % dest_file)
-
         # Set transfer parameters
         params = ctx.transfer_parameters()
-        params.timeout = 30
-        params.event_callback = event_callback
+        params.timeout = args.se_timeout
 
         params.overwrite = True
 
-        log.debug('Get file using gfal.filecopy().')
-
-        log.debug('''Parameters:
- source: %s
- dest: %s
- src_spacetoken: %s
- dst_spacetoken: %s
- timeout: %s''' % (src_file, dest_file, params.src_spacetoken,
-                   params.dst_spacetoken, params.timeout))
-
         stMsg = 'File was%s copied from SRM.'
         start_transfer = datetime.datetime.now()
-        log.debug('StartTime of the transfer: %s' % str(start_transfer))
+
 
         try:
             ctx.filecopy(params, str(src_file), str(dest_file))
@@ -459,14 +383,13 @@ def metricVOGet(args, io):
                 # Files match
                 io.status = nap.OK
                 total_transfer = datetime.datetime.now() - start_transfer
-                log.debug('Transfer Duration: %s' % str(total_transfer))
                 io.summary = stMsg % (
                     '') + ' Diff successful.' + " Transfer time: " + str(total_transfer)
             else:
                 # Files do not match
                 io.status = nap.CRITICAL
                 io.summary = stMsg % ('') + ' Files differ!'
-                log.debug('Files differ!')
+
         except gfal2.GError as e:
             io.status = nap.CRITICAL
             er = e.message
@@ -474,17 +397,18 @@ def metricVOGet(args, io):
                 io.summary = stMsg % (' NOT') + ' [Err:%s]' % str(er)
             else:
                 io.summary = stMsg % ' NOT'
-            log.debug('ERROR: %s' % str(e))
         except Exception as e:
-            io.status = 'UNKNOWN'
-            io.summary = stMsg % ' NOT'
-            log.debug('ERROR: %s:%s' % (str(e), sys.exc_info()[0]))
+            io.set_status(
+                nap.UNKNOWN, 'problem invoking gfal2 filecopy(): %s:%s' %
+                (str(e), sys.exc_info()[0]))
 
 
 @app.metric(seq=7, metric_name="VODel", passive=False)
 def metricVODel(args, io):
     """Delete given file(s) from SRM."""
-    log.debug(gfal2_ver)
+
+    if len(_voInfoDictionary.keys()) == 0:
+        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
 
     # Instantiate gfal2
     ctx = gfal2.creat_context()
@@ -493,29 +417,26 @@ def metricVODel(args, io):
 
         src_filename = (_voInfoDictionary[srmendpt])['fn']
         src_file = srmendpt + '/' + src_filename
-
-        log.debug('Source: %s' % src_file)
-        log.debug('Using gfal2.unlink().')
-
         stMsg = 'File was%s deleted from SRM.'
-
-        log.debug('Deleting: %s' % src_file)
         try:
             ctx.unlink(str(src_file))
             io.status = nap.OK
             io.summary = stMsg % ''
         except gfal2.GError as e:
-            io.summary = stMsg % ' NOT'
+            er = e.message
+            if er:
+                io.summary = stMsg % ' NOT' + ' [Err:%s]' % str(er)
+            else:
+                io.summary = stMsg % ' NOT'
             io.status = nap.CRITICAL
-            log.debug('ERROR: %s:%s' % (str(e), sys.exc_info()[0]))
         except Exception as e:
-            io.status = nap.UNKNOWN
-            io.summary = stMsg % ' NOT'
-            log.debug('ERROR: %s:%s' % (str(e), sys.exc_info()[0]))
+            io.set_status(
+                nap.UNKNOWN, 'problem invoking gfal2 unlink(): %s:%s' %
+                (str(e), sys.exc_info()[0]))
     try:
         shutil.rmtree(workdir_metric)
     except OSError as e:
-        print("Error: %s : %s" % (workdir_metric, e.strerror))
+        pass
 
-
-app.run()
+if __name__ == '__main__':
+    app.run()

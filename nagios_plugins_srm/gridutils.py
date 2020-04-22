@@ -32,18 +32,8 @@ import subprocess
 import socket
 from random import choice
 
-
-########################################
-# BDII over LDAP.
-########################################
-"""
-BDII over LDAP:
-- query_bdii() - BDII query.
-"""
-
 LDAP_TIMEOUT_NETWORK = 20
 LDAP_TIMELIMIT_SEARCH = 20
-
 
 class ErrLDAPTimeout(Exception):
     """LDAP timeout exception.
