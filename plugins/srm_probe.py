@@ -438,8 +438,5 @@ def metricVODel(args, io):
     except OSError as e:
         pass
 
-def main():
-    app.run()
-
 if __name__ == '__main__':
     app.run()

@@ -1,53 +1,54 @@
-#
-# nagios-plugin-srm RPM
-#
+# Package needs to stay arch specific (due to nagios plugins location), but
+# there's nothing to extract debuginfo from
+%global debug_package %{nil}
 
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%define nagios_plugins_dir %{_libdir}/nagios/plugins
 
-Summary: Nagios plugins for SRM 
-Name: nagios-plugins-srm 
-Version: 0.0.1
-Release: 1%{?dist}
-Group: Applications/Internet
-License: ASL 2.0
-URL: https://github.com/EGI-Foundation/nagios-plugin-srm
-Source: nagios_plugins_srm-%{version}.tar.gz
-
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: python-setuptools
-BuildRequires: python-pbr
-BuildRequires: python-nap
-BuildRequires: python-gfal2
-Requires: python-pbr
-Requires: python
-Requires: openldap-clients
-Requires: gfal2-python
-Requires: gfal2-plugin-srm
-Requires: gfal2-plugin-file
-
-
+Name:       nagios-plugins-srm
+Version:    0.0.1
+Release:    1%{?dist}
+Summary:    Nagios probes to be run remotely against SRM mendpoints
+License:    ASL 2.0
+Group:      Applications/Internet
+URL:        https://github.com/EGI-Foundation/nagios-plugins-srm
+# The source of this package was pulled from upstream's vcs. Use the
+# following commands to generate the tarball:
+Source0:   %{name}-%{version}.tar.gz
+Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 
+BuildRequires:  cmake
+BuildRequires:  python2-gfal2%{?_isa}
+BuildRequires:  python-nap%{?_isa}
+Requires:   nagios%{?_isa}
+Requires:   python%{?_isa}
+Requires:   openldap-clients
+
 %description
-Nagios plugins for monitoring SRM endpoints
+This package provides the nagios probes for SRM. 
 
 %prep
-%setup -q -n nagios_plugins_srm-%{version}
+%setup -q -n %{name}-%{version}
 
 %build
+%cmake . -DCMAKE_INSTALL_PREFIX=/
+
+make %{?_smp_mflags}
 
 %install
-rm -rf $RPM_BUILD_ROOT
-python setup.py install --root $RPM_BUILD_ROOT
+rm -rf %{buildroot}
+mkdir -p %{buildroot}
+
+make install DESTDIR=%{buildroot}
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%{python_sitelib}/nagios_plugins_srm*
-/usr/bin/nagios-plugins-srm
+%{nagios_plugins_dir}/srm
+%doc LICENSE README.md
 
 %changelog
-* Wed Apr 22 2020 Andrea Manzi <andrea.manzi@egi.eu> 0.0.1
-- Initial release 
+* Thu Apr 23 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.1-0
+- first version
