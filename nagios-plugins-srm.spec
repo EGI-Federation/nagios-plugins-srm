@@ -19,10 +19,12 @@ BuildArch: noarch
 
 BuildRequires:  cmake
 BuildRequires:  python2-gfal2%{?_isa}
-BuildRequires:  python-nap%{?_isa}
+BuildRequires:  python-nap
 Requires:   nagios%{?_isa}
 Requires:   python%{?_isa}
 Requires:   openldap-clients
+Requires:   python2-gfal2%{?_isa}
+Requires:   python-nap
 
 %description
 This package provides the nagios probes for SRM. 
