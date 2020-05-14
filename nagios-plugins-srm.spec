@@ -23,6 +23,8 @@ Requires:   python%{?_isa}
 Requires:   openldap-clients
 Requires:   python2-gfal2%{?_isa}
 Requires:   python-nap
+Requires:   gfal2-plugin-file
+Requires:   gfal2-plugin-srm
 
 %description
 This package provides the nagios probes for SRM. 
