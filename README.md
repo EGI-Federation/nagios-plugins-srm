@@ -12,7 +12,7 @@ A X509 valid proxy certificate is needed to execute the probe (configured via X5
 
 The probes runs the following passive checks in sequence:
 
-  * GetSURLs: use the endpoint passed as argument or boiuld the SURL contacting the BDII
+  * GetSURLs: use the endpoint passed as argument or build the SURL contacting the BDII
   * VOLsDir: list the folder 
   * VOPut: put a test file
   * VOLs: list the file previously copied
