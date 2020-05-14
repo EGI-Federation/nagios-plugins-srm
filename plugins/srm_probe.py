@@ -12,7 +12,6 @@ import time
 import gridutils
 import tempfile
 import datetime
-
 import filecmp
 import gfal2
 import nap.core
@@ -41,7 +40,7 @@ app.add_argument("--se-timeout",dest="se_timeout", type=int, help="storage opera
 # Reasonable defaults for timeouts
 LCG_GFAL_BDII_TIMEOUT = 10
 
-gfal2.set_verbose(gfal2.verbose_level.debug)
+gfal2.set_verbose(gfal2.verbose_level.normal)
 
 # Service version(s)
 svcVers = ['1','2']  
@@ -153,7 +152,7 @@ def getSURLFromBDII(args,io):
     return eps
 
 
-@app.metric(seq=1, metric_name="GetSURLs", passive=False)
+@app.metric(seq=1, metric_name="GetSURLs", passive=True)
 def getSURLs(args, io):
     """
     Use provided endpoint as SURL or use the BDII to retrieve the Storage Area and build the SURLs to test
@@ -175,7 +174,7 @@ def getSURLs(args, io):
     io.status = nap.OK
 
 
-@app.metric(seq=2, metric_name="VOLsDir", passive=False)
+@app.metric(seq=2, metric_name="VOLsDir", passive=True)
 def metricVOLsDir(args, io):
     """
     List content of VO's top level space area(s) in SRM using gfal2.listdir().
@@ -212,7 +211,7 @@ def metricVOLsDir(args, io):
                 (str(e), sys.exc_info()[0]))
 
 
-@app.metric(seq=3, metric_name="VOPut", passive=False)
+@app.metric(seq=3, metric_name="VOPut", passive=True)
 def metricVOPut(args, io):
     """Copy a local file to the SRM into space area(s) defined by VO."""
 
@@ -272,7 +271,7 @@ def metricVOPut(args, io):
                 (str(e), sys.exc_info()[0]))
 
 
-@app.metric(seq=4, metric_name="VOLs", passive=False)
+@app.metric(seq=4, metric_name="VOLs", passive=True)
 def metricVOLs(args, io):
     """Stat (previously copied) file(s) on the SRM."""
 
@@ -310,7 +309,7 @@ def metricVOLs(args, io):
                 (str(e), sys.exc_info()[0]))
 
 
-@app.metric(seq=5, metric_name="VOGetTurl", passive=False)
+@app.metric(seq=5, metric_name="VOGetTurl", passive=True)
 def metricVOGetTURLs(ags, io):
     """Get Transport URLs for the file copied to storage"""
 
@@ -348,7 +347,7 @@ def metricVOGetTURLs(ags, io):
                 (str(e), sys.exc_info()[0]))
      
 
-@app.metric(seq=6, metric_name="VOGet", passive=False)
+@app.metric(seq=6, metric_name="VOGet", passive=True)
 def metricVOGet(args, io):
     """Copy given remote file(s) from SRM to a local file."""
 
@@ -403,7 +402,7 @@ def metricVOGet(args, io):
                 (str(e), sys.exc_info()[0]))
 
 
-@app.metric(seq=7, metric_name="VODel", passive=False)
+@app.metric(seq=7, metric_name="VODel", passive=True)
 def metricVODel(args, io):
     """Delete given file(s) from SRM."""
 
@@ -433,10 +432,26 @@ def metricVODel(args, io):
             io.set_status(
                 nap.UNKNOWN, 'problem invoking gfal2 unlink(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
+ 
+
+@app.metric(seq=8, metric_name="VOAll", passive=False)
+def metricVOAlll(args, io):
+    """Active metric to conbine the result from the previous passive ones"""
+
+    results = app.metric_results()
+
+    statuses = [e[1] for e in results]
+    
+    if all(st == 0 for st in statuses):
+        io.set_status(nap.OK, "All fine")
+    if 2 in statuses:
+        io.set_status(nap.CRITICAL, "Error executing passive checks")
+
     try:
         shutil.rmtree(workdir_metric)
     except OSError as e:
         pass
+
 
 if __name__ == '__main__':
     app.run()
