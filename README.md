@@ -71,7 +71,7 @@ optional arguments:
 ## Example
 
 ```
-bash-4.2# python ./plugins/srm_probe.py -H ccsrm.in2p3.fr --voname dteam  --dry-run -d
+bash-4.2# ./plugins/srm_probe.py -H ccsrm.in2p3.fr --voname dteam  --dry-run -d
 May 14 13:56:02 DEBUG core[1219]: Call sequence: [(<function getSURLs at 0x7f53d106d230>, 'GetSURLs', True), (<function metricVOLsDir at 0x7f53d106d2a8>, 'VOLsDir', True), (<function metricVOPut at 0x7f53d106d320>, 'VOPut', True), (<function metricVOLs at 0x7f53d106d398>, 'VOLs', True), (<function metricVOGetTURLs at 0x7f53d106d410>, 'VOGetTurl', True), (<function metricVOGet at 0x7f53d106d488>, 'VOGet', True), (<function metricVODel at 0x7f53d106d500>, 'VODel', True), (<function metricVOAlll at 0x7f53d106d578>, 'VOAll', False)] 
 May 14 13:56:02 DEBUG core[1219]:    Function call: getSURLs
 No such object (32)
@@ -98,3 +98,10 @@ May 14 13:56:06 DEBUG core[1219]: [1589464566] PROCESS_SERVICE_CHECK_RESULT;ccsr
 May 14 13:56:06 DEBUG core[1219]:    Function call: metricVOAlll
 OK - All fine
 ```
+##  rpm build
+```
+mkdir build
+cd build
+make rpm -f ../Makefile 
+
+
