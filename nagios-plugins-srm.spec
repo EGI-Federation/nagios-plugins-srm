@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.1
+Version:    0.0.2
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -21,7 +21,7 @@ BuildRequires:  cmake
 Requires:   nagios%{?_isa}
 Requires:   python%{?_isa}
 Requires:   openldap-clients
-Requires:   python2-gfal2%{?_isa}
+Requires:   gfal2-python%{?_isa}
 Requires:   python-nap
 Requires:   gfal2-plugin-file
 Requires:   gfal2-plugin-srm
@@ -52,5 +52,9 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
+* Fri May 22 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.2-0
+- update spec
+- add shabang
+
 * Thu Apr 23 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.1-0
 - first version
