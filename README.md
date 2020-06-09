@@ -27,8 +27,8 @@ the active check VOAll just combines the passive checks outcomes.
 ```
 usage: srm_probe.py [-h] [--version] [-H HOSTNAME] [-w WARNING] [-c CRITICAL]
                     [-d] [-p PREFIX] [-s SUFFIX] [-t TIMEOUT] [-C COMMAND]
-                    [--dry-run] [-o OUTPUT] [-E ENDPOINT] [-VO VONAME]
-                    [--srmv SRMV] [--ldap-url LDAP_URL]
+                    [--dry-run] [-o OUTPUT] [-E ENDPOINT] [-X X509]
+                    [-VO VONAME] [--srmv SRMV] [--ldap-url LDAP_URL]
                     [--se-timeout SE_TIMEOUT]
 
 NAGIOS SRM probe
@@ -60,6 +60,7 @@ optional arguments:
                         nagios)
   -E ENDPOINT, --endpoint ENDPOINT
                         SRM base SURL to test
+  -X X509, --x509 X509  location of x509 certificate proxy file
   -VO VONAME, --voname VONAME
                         VO name, needed for interaction with BDII
   --srmv SRMV           srm version to use
@@ -71,7 +72,7 @@ optional arguments:
 ## Example
 
 ```
-bash-4.2# ./plugins/srm_probe.py -H ccsrm.in2p3.fr --voname dteam  --dry-run -d
+bash-4.2# ./plugins/srm_probe.py -H ccsrm.in2p3.fr --voname dteam  -X /tmp/proxy --dry-run -d
 May 14 13:56:02 DEBUG core[1219]: Call sequence: [(<function getSURLs at 0x7f53d106d230>, 'GetSURLs', True), (<function metricVOLsDir at 0x7f53d106d2a8>, 'VOLsDir', True), (<function metricVOPut at 0x7f53d106d320>, 'VOPut', True), (<function metricVOLs at 0x7f53d106d398>, 'VOLs', True), (<function metricVOGetTURLs at 0x7f53d106d410>, 'VOGetTurl', True), (<function metricVOGet at 0x7f53d106d488>, 'VOGet', True), (<function metricVODel at 0x7f53d106d500>, 'VODel', True), (<function metricVOAlll at 0x7f53d106d578>, 'VOAll', False)] 
 May 14 13:56:02 DEBUG core[1219]:    Function call: getSURLs
 No such object (32)
@@ -103,5 +104,5 @@ OK - All fine
 mkdir build
 cd build
 make rpm -f ../Makefile 
-
+```
 

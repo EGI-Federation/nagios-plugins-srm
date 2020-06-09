@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.2
+Version:    0.0.3
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -25,6 +25,7 @@ Requires:   gfal2-python%{?_isa}
 Requires:   python-nap
 Requires:   gfal2-plugin-file
 Requires:   gfal2-plugin-srm
+Requires:   gfal2-plugin-gridftp
 
 %description
 This package provides the nagios probes for SRM. 
@@ -52,6 +53,10 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
+* Tue Jun 09 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.3-0
+- add gfal2-plugin-gsiftp dependency
+- add option to specify proxy path
+
 * Fri May 22 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.2-0
 - update spec
 - add shabang

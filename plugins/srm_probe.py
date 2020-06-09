@@ -25,18 +25,18 @@ except BaseException:
     from urllib.parse import urlparse
 
 
-PROBE_VERSION = "v0.0.2"
+PROBE_VERSION = "v0.0.3"
 
 
 # ########################################################################### #
 app = nap.core.Plugin(description="NAGIOS SRM probe",
                       version=PROBE_VERSION)
 app.add_argument("-E", "--endpoint", help="SRM base SURL to test")
+app.add_argument("-X", "--x509", help="location of x509 certificate proxy file")
 app.add_argument("-VO", "--voname", help="VO name, needed for interaction with BDII", default="ops")
 app.add_argument("--srmv",  help="srm version to use", default='2')
 app.add_argument("--ldap-url", help="LDAP URL", dest="ldap_url", default="ldap://lcg-bdii.cern.ch:2170")
 app.add_argument("--se-timeout",dest="se_timeout", type=int, help="storage operations timeout", default=60)
-
 
 # Reasonable defaults for timeouts
 LCG_GFAL_BDII_TIMEOUT = 10
@@ -55,6 +55,9 @@ _fileSRMPattern = 'testfile-put-%s-%s.txt'  # time, uuid
 
 _voInfoDictionary = {}
 
+# Instantiate gfal2
+ctx = gfal2.creat_context()
+
 # GFAL version
 gfal2_ver = "gfal2 " + gfal2.get_version()
 
@@ -68,6 +71,11 @@ def parse_args(args, io):
         io.set_status(nap.CRITICAL,errstr)
         return  1  
     os.environ['LCG_GFAL_INFOSYS'] = args.ldap_url
+
+    if args.x509:
+        os.environ['X509_USER_PROXY'] = args.x509
+ 
+
 
 def query_bdii(ldap_filter, ldap_attrlist, ldap_url=''):
     'Local wrapper for gridutils.query_bdii()'
@@ -191,13 +199,10 @@ def metricVOLsDir(args, io):
         io.set_status('UNKNOWN', 'Error reading SRM to test')
         return
 
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
-
     for surl in srms: 
         try:
             ctx.listdir(str(surl))
-            io.summary = 'Storage Path[%s] Directory successfully listed' % surl
+            io.summary = 'Storage Path[%s] Directory successfully listed' % str(surl)
             io.status = nap.OK
         except gfal2.GError as e:
             er = e.message
@@ -242,9 +247,6 @@ def metricVOPut(args, io):
     except IOError as e:
         io.set_status(nap.CRITICAL, 'Error creating source file')
 
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
-
     for dest_file in dest_files:
         # Set transfer parameters
         params = ctx.transfer_parameters()
@@ -287,9 +289,6 @@ def metricVOLs(args, io):
         dest_file = srmendpt + '/' + dest_filename
         srms.append(dest_file)
 
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
-
     for surl in srms:
         try:
             statp = ctx.stat(str(surl))
@@ -317,8 +316,6 @@ def metricVOGetTURLs(ags, io):
     if len(_voInfoDictionary.keys()) == 0:
         io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
         return
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
 
     for srmendpt in _voInfoDictionary.keys():
 
@@ -356,9 +353,6 @@ def metricVOGet(args, io):
     if len(_voInfoDictionary.keys()) == 0:
         io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
         return
-
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
 
     for srmendpt in _voInfoDictionary.keys():
 
@@ -409,9 +403,6 @@ def metricVODel(args, io):
 
     if len(_voInfoDictionary.keys()) == 0:
         io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
-
-    # Instantiate gfal2
-    ctx = gfal2.creat_context()
 
     for srmendpt in _voInfoDictionary.keys():
 
