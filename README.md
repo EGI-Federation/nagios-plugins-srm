@@ -79,7 +79,7 @@ No such object (32)
 May 14 13:56:03 DEBUG core[1219]: 'OK - SURLs successfully retrieved\\n'
 May 14 13:56:03 DEBUG core[1219]: [1589464563] PROCESS_SERVICE_CHECK_RESULT;ccsrm.in2p3.fr;GetSURLs;0;OK - SURLs successfully retrieved\n
 May 14 13:56:03 DEBUG core[1219]:    Function call: metricVOLsDir
-May 14 13:56:03 DEBUG core[1219]: u'OK - Storage Path[srm://ccsrm.in2p3.fr:8443/srm/managerv2?SFN=/pnfs/in2p3.fr/data/dteam/] Directory successfully listed\\n'
+May 14 13:56:03 DEBUG core[1219]: 'OK - Storage Path[srm://ccsrm.in2p3.fr:8443/srm/managerv2?SFN=/pnfs/in2p3.fr/data/dteam/] Directory successfully listed\\n'
 May 14 13:56:03 DEBUG core[1219]: [1589464563] PROCESS_SERVICE_CHECK_RESULT;ccsrm.in2p3.fr;VOLsDir;0;OK - Storage Path[srm://ccsrm.in2p3.fr:8443/srm/managerv2?SFN=/pnfs/in2p3.fr/data/dteam/] Directory successfully listed\n
 May 14 13:56:03 DEBUG core[1219]:    Function call: metricVOPut
 May 14 13:56:04 DEBUG core[1219]: 'OK - File was copied to SRM. Transfer time: 0:00:01.456309\\n'

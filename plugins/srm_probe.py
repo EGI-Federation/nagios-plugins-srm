@@ -73,7 +73,9 @@ def parse_args(args, io):
     os.environ['LCG_GFAL_INFOSYS'] = args.ldap_url
 
     if args.x509:
-        os.environ['X509_USER_PROXY'] = args.x509
+        cred = gfal2.cred_new("X509_CERT",args.x509)
+        gfal2.cred_set(ctx,"srm://",cred)
+        gfal2.cred_set(ctx,"gsiftp://",cred)
  
 
 
@@ -369,8 +371,6 @@ def metricVOGet(args, io):
 
         stMsg = 'File was%s copied from SRM.'
         start_transfer = datetime.datetime.now()
-
-
         try:
             ctx.filecopy(params, str(src_file), str(dest_file))
             if filecmp.cmp(_fileTest, _fileTestIn):
@@ -428,7 +428,7 @@ def metricVODel(args, io):
 
 @app.metric(seq=8, metric_name="VOAll", passive=False)
 def metricVOAlll(args, io):
-    """Active metric to conbine the result from the previous passive ones"""
+    """Active metric to combine the result from the previous passive ones"""
 
     results = app.metric_results()
 
