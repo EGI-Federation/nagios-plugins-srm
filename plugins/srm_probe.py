@@ -25,7 +25,7 @@ except BaseException:
     from urllib.parse import urlparse
 
 
-PROBE_VERSION = "v0.0.3"
+PROBE_VERSION = "v0.0.5"
 
 
 # ########################################################################### #
@@ -190,12 +190,19 @@ def metricVOLsDir(args, io):
     """
     List content of VO's top level space area(s) in SRM using gfal2.listdir().
     """
+   
+    # verify previous test succeeded
+    results = app.metric_results()
+    if (results[0][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VOLsDir skipped")
+        return
+
     srms = []
     try:
         for srm in _voInfoDictionary.keys():
             srms.append(srm)
         if not srms:
-            io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+            io.set_status(nap.WARNING, 'No SRM endpoints found to test')
             return
     except Exception as e:
         io.set_status('UNKNOWN', 'Error reading SRM to test')
@@ -208,14 +215,20 @@ def metricVOLsDir(args, io):
             io.status = nap.OK
         except gfal2.GError as e:
             er = e.message
-            io.status = nap.CRITICAL
             if er:
-                io.summary = '[Err:%s];' %  str(er)
+                # SRM_TOO_MANY_RESULTS is handled as an error in gfal2, we don't want to report it as Critical here
+                if "SRM_TOO_MANY_RESULTS" in er:
+                    io.summary = '[WARN:%s];' %  str(er)
+                    io.status = nap.WARNING
+                else:
+                    io.status = nap.CRITICAL
+                    io.summary = '[Err:%s];' %  str(er)
             else:
+                io.status = nap.CRITICAL
                 io.summary = 'Error'
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 listdir(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 listdir(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
 
 
@@ -223,9 +236,14 @@ def metricVOLsDir(args, io):
 def metricVOPut(args, io):
     """Copy a local file to the SRM into space area(s) defined by VO."""
 
+    # verify VOGetSurls test succeeded
+    results = app.metric_results()
+    if (results[0][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VOLsDir skipped")
+        return
 
     if len(_voInfoDictionary.keys()) == 0:
-        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        io.set_status(nap.WARNING, 'No SRM endpoints found to test')
         return
 
     # multiple 'SAPath's are possible
@@ -272,7 +290,7 @@ def metricVOPut(args, io):
                 io.summary = stMsg % ' NOT'
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 filecopy(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 filecopy(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
 
 
@@ -280,8 +298,14 @@ def metricVOPut(args, io):
 def metricVOLs(args, io):
     """Stat (previously copied) file(s) on the SRM."""
 
+     # verify previous test succeeded
+    results = app.metric_results()
+    if ( results[2][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VOLs skipped")
+        return
+
     if len(_voInfoDictionary.keys()) == 0:
-        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        io.set_status(nap.WARNING, 'No SRM endpoints found to test')
         return
 
     srms = []
@@ -307,7 +331,7 @@ def metricVOLs(args, io):
        
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 stat(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 stat(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
 
 
@@ -315,8 +339,14 @@ def metricVOLs(args, io):
 def metricVOGetTURLs(ags, io):
     """Get Transport URLs for the file copied to storage"""
 
+    # verify previous test succeeded
+    results = app.metric_results()
+    if (results[3][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VOGetTurl skipped")
+        return
+
     if len(_voInfoDictionary.keys()) == 0:
-        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        io.set_status(nap.WARNING, 'No SRM endpoints found to test')
         return
 
     for srmendpt in _voInfoDictionary.keys():
@@ -343,7 +373,7 @@ def metricVOGetTURLs(ags, io):
                 io.summary = 'protocol FAILED-[%s]' % protocol
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 getxattr(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 getxattr(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
      
 
@@ -351,9 +381,14 @@ def metricVOGetTURLs(ags, io):
 def metricVOGet(args, io):
     """Copy given remote file(s) from SRM to a local file."""
 
+    # verify previous test succeeded
+    results = app.metric_results()
+    if ( results[4][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VOGet skipped")
+        return
 
     if len(_voInfoDictionary.keys()) == 0:
-        io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
+        io.set_status(nap.WARNING, 'No SRM endpoints found to test')
         return
 
     for srmendpt in _voInfoDictionary.keys():
@@ -393,13 +428,19 @@ def metricVOGet(args, io):
                 io.summary = stMsg % ' NOT'
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 filecopy(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 filecopy(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
 
 
 @app.metric(seq=7, metric_name="VODel", passive=True)
 def metricVODel(args, io):
     """Delete given file(s) from SRM."""
+
+    # skip only if the put failed
+    results = app.metric_results()
+    if ( results[2][1] != nap.OK ):
+        io.set_status(nap.WARNING, "VODel skipped")
+        return
 
     if len(_voInfoDictionary.keys()) == 0:
         io.set_status(nap.CRITICAL, 'No SRM endpoints found to test')
@@ -422,7 +463,7 @@ def metricVODel(args, io):
             io.status = nap.CRITICAL
         except Exception as e:
             io.set_status(
-                nap.UNKNOWN, 'problem invoking gfal2 unlink(): %s:%s' %
+                nap.CRITICAL, 'problem invoking gfal2 unlink(): %s:%s' %
                 (str(e), sys.exc_info()[0]))
  
 
@@ -436,8 +477,10 @@ def metricVOAlll(args, io):
     
     if all(st == 0 for st in statuses):
         io.set_status(nap.OK, "All fine")
-    if 2 in statuses:
-        io.set_status(nap.CRITICAL, "Error executing passive checks")
+    elif nap.CRITICAL in statuses:
+        io.set_status(nap.CRITICAL, "Critical error executing tests")
+    else:
+        io.set_status(nap.WARNING, "Some of the tests returned a warning")
 
     try:
         shutil.rmtree(workdir_metric)

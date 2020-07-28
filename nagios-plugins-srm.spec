@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.3
+Version:    0.0.5
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -53,13 +53,20 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
+* Tue Jul 28 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.5-0
+- skip tests if dependant tests are failing
+- WARNING if LsDir tests returns SRM_TOO_MANY_RESULTS 
+
+* Tue Jun 30 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.4-0
+- set credentials via API
+
 * Tue Jun 09 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.3-0
 - add gfal2-plugin-gsiftp dependency
 - add option to specify proxy path
 
 * Fri May 22 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.2-0
 - update spec
-- add shabang
+- add shebang
 
 * Thu Apr 23 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.1-0
 - first version
