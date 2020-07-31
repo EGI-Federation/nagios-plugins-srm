@@ -131,7 +131,7 @@ def getSURLFromBDII(args,io):
             " " +
             k +
             " is published for " +
-            args.endpoint +
+            args.hostname +
             ": " +
             ', '.join(
                 res[k]))
