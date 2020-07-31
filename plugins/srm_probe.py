@@ -176,8 +176,6 @@ def getSURLs(args, io):
     else:
         eps.append(args.endpoint)
     if len(eps) == 0:
-        io.summary = 'Fail to retrieve SURLs to test'
-        io.status = nap.CRITICAL
         return
     for ep in eps:
         _voInfoDictionary[ep] = {}
