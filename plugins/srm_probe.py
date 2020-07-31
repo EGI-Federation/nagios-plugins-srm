@@ -121,7 +121,7 @@ def getSURLFromBDII(args,io):
     if not res[k]:
         io.set_status(nap.CRITICAL,
                       "%s is not published for %s in %s" %
-                      (k, args.endpoint, args.ldap_url))
+                      (k, args.hostname, args.ldap_url))
         return []
     elif len(res[k]) > 1:
         io.set_status(
