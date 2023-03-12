@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ##############################################################################
 # DESCRIPTION
 ##############################################################################
@@ -74,10 +74,15 @@ def parse_args(args, io):
 
     if args.x509:
         cred = gfal2.cred_new("X509_CERT",args.x509)
-        gfal2.cred_set(ctx,"srm://",cred)
-        gfal2.cred_set(ctx,"gsiftp://",cred)
- 
-
+        ctx.cred_set("srm://",cred)
+        ctx.cred_set("gsiftp://",cred)
+        ctx.cred_set("https://",cred)
+        ctx.cred_set("root://",cred)
+        #gfal2.cred_set(ctx,"srm://",cred)
+        #gfal2.cred_set(ctx,"gsiftp://",cred)
+        #gfal2.cred_set(ctx,"https://",cred)
+        #gfal2.cred_set(ctx,"root://",cred)
+    ctx.set_opt_string_list("SRM PLUGIN", "TURL_PROTOCOLS", ["gsiftp","https","root", "rfio", "gsidcap", "dcap", "kdcap"])
 
 def query_bdii(ldap_filter, ldap_attrlist, ldap_url=''):
     'Local wrapper for gridutils.query_bdii()'
@@ -351,15 +356,15 @@ def metricVOGetTURLs(ags, io):
 
         src_filename = (_voInfoDictionary[srmendpt])['fn']
         src_file = srmendpt + '/' + src_filename
-        protocol = 'gsiftp'
         try:
-            if urlparse(src_file).scheme == 'gsiftp':
-                # If protocol is gsiftp, it's already a transport URL
+            scheme = urlparse(src_file).scheme
+            if scheme in ['gsiftp', 'https']:
+                # If protocol is gsiftp or https it's already a transport URL
                 replicas = src_file
             else:
                 replicas = ctx.getxattr(str(src_file), 'user.replicas')
 
-            io.summary = 'protocol OK-[%s]' % protocol
+            io.summary = 'protocol OK-[%s]' % scheme + ' replicas [%s] ' %  str(replicas)
             io.status = nap.OK
 
         except gfal2.GError as e:

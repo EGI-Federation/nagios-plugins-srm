@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.5
+Version:    0.0.6
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -18,14 +18,16 @@ Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 
 BuildRequires:  cmake
-Requires:   nagios%{?_isa}
-Requires:   python%{?_isa}
+Requires:   nagios%
+Requires:   python3.6
 Requires:   openldap-clients
-Requires:   gfal2-python%{?_isa}
-Requires:   python-nap
+Requires:   gfal2-python3
+Requires:   python3-nap
 Requires:   gfal2-plugin-file
 Requires:   gfal2-plugin-srm
 Requires:   gfal2-plugin-gridftp
+Requires:   gfal2-plugin-xrootd
+Requires:   gfal2-plugin-http
 
 %description
 This package provides the nagios probes for SRM. 
@@ -53,6 +55,11 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
+* Mom Mar 13 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.6-0
+- py3 only version
+- added support for srm+https and srm+root
+- use new gfal2 credentials API
+
 * Tue Jul 28 2020 Andrea Manzi <amanzi@cern.ch> - 0.0.5-0
 - skip tests if dependant tests are failing
 - WARNING if LsDir tests returns SRM_TOO_MANY_RESULTS 
