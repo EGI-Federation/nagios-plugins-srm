@@ -19,9 +19,9 @@ BuildArch: noarch
 
 BuildRequires:  cmake
 Requires:   nagios
-Requires:   python3.6
+Requires:   python3
 Requires:   openldap-clients
-Requires:   gfal2-python3
+Requires:   python3-gfal2 >= 1.12.0
 Requires:   python3-nap
 Requires:   gfal2-plugin-file
 Requires:   gfal2-plugin-srm
@@ -55,7 +55,7 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
-* Mom Mar 13 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.6-0
+* Mon Mar 13 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.6-0
 - py3 only version
 - added support for srm+https and srm+root
 - use new gfal2 credentials API
