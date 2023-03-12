@@ -18,7 +18,7 @@ Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 
 BuildRequires:  cmake
-Requires:   nagios%
+Requires:   nagios
 Requires:   python3.6
 Requires:   openldap-clients
 Requires:   gfal2-python3
