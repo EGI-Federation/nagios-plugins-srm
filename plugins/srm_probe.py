@@ -371,9 +371,9 @@ def metricVOGetTURLs(ags, io):
             io.status = nap.CRITICAL
             er = e.message
             if er:
-                io.summary = 'protocol FAILED-[%s]' % protocol + ' [Err:%s]' % str(er)
+                io.summary = 'protocol FAILED-[%s]' % scheme + ' [Err:%s]' % str(er)
             else:
-                io.summary = 'protocol FAILED-[%s]' % protocol
+                io.summary = 'protocol FAILED-[%s]' % scheme
         except Exception as e:
             io.set_status(
                 nap.CRITICAL, 'problem invoking gfal2 getxattr(): %s:%s' %
