@@ -73,7 +73,7 @@ def parse_args(args, io):
     os.environ['LCG_GFAL_INFOSYS'] = args.ldap_url
 
     if args.x509:
-        cred = gfal2.cred_new("X509_CERT",args.x509)
+        cred = ctx.cred_new("X509_CERT",args.x509)
         ctx.cred_set("srm://",cred)
         ctx.cred_set("gsiftp://",cred)
         ctx.cred_set("https://",cred)
@@ -364,7 +364,7 @@ def metricVOGetTURLs(ags, io):
             else:
                 replicas = ctx.getxattr(str(src_file), 'user.replicas')
 
-            io.summary = 'protocol OK-[%s]' % scheme + ' replicas [%s] ' %  str(replicas)
+            io.summary = 'protocol OK-[%s]' % scheme + ' replicas [%s]' % str(replicas)
             io.status = nap.OK
 
         except gfal2.GError as e:
