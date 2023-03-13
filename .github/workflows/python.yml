@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-bionic
     strategy:
       matrix:
         python-version: [3.6, 3.8]
