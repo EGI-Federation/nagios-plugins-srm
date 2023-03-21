@@ -35,9 +35,9 @@ from random import choice
 LDAP_TIMEOUT_NETWORK = 20
 LDAP_TIMELIMIT_SEARCH = 20
 
+
 class ErrLDAPTimeout(Exception):
-    """LDAP timeout exception.
-    """
+    """LDAP timeout exception."""
 
 
 # Return codes in case of LDAP query errors
@@ -47,9 +47,14 @@ LDAP_QE_TIMEOUT = 2
 LDAP_QE_OTHER = 7
 
 
-def query_bdii(ldap_filter, ldap_attrlist, ldap_url='', ldap_base='o=grid',
-               ldap_timelimit=LDAP_TIMELIMIT_SEARCH,
-               net_timeout=LDAP_TIMEOUT_NETWORK):
+def query_bdii(
+    ldap_filter,
+    ldap_attrlist,
+    ldap_url="",
+    ldap_base="o=grid",
+    ldap_timelimit=LDAP_TIMELIMIT_SEARCH,
+    net_timeout=LDAP_TIMEOUT_NETWORK,
+):
     """Query BDII (LDAP based).
 
     Depending on availability uses either LDAP API or CLI.
@@ -80,69 +85,86 @@ def query_bdii(ldap_filter, ldap_attrlist, ldap_url='', ldap_base='o=grid',
     @rtype: L{tuple}
     """
     if not ldap_filter:
-        msg = 'ldap_filer must be specified (%s())' % \
-            sys._getframe(1).f_code.co_name
+        msg = "ldap_filer must be specified (%s())" % sys._getframe(1).f_code.co_name
         return 0, (LDAP_QE_OTHER, msg, msg)
 
     if not isinstance(ldap_attrlist, list):
-        msg = 'attributes list should be a list object (%s())' % \
-            sys._getframe(1).f_code.co_name
+        msg = (
+            "attributes list should be a list object (%s())"
+            % sys._getframe(1).f_code.co_name
+        )
         return (0, (LDAP_QE_OTHER, msg, msg))
 
-    ldaps = ldap_url and ldap_url.split(',') or \
-        sys.get_env('LCG_GFAL_INFOSYS').split(',')
+    ldaps = (
+        ldap_url and ldap_url.split(",") or sys.get_env("LCG_GFAL_INFOSYS").split(",")
+    )
     try:
         ldap_url = get_working_ldap(ldaps)  # IP address
     except (TypeError, ValueError, LookupError) as e:
-        return 0, (LDAP_QE_OTHER, 'Failed to get working BDII from [%s].' % ','.join(
-            ldaps), str(e))
+        return 0, (
+            LDAP_QE_OTHER,
+            "Failed to get working BDII from [%s]." % ",".join(ldaps),
+            str(e),
+        )
     try:
 
-        return __ldap_CLI(ldap_filter, ldap_attrlist, ldap_url,
-                          ldap_base, ldap_timelimit, net_timeout)
+        return __ldap_CLI(
+            ldap_filter, ldap_attrlist, ldap_url, ldap_base, ldap_timelimit, net_timeout
+        )
     except Exception as e:
-        return 0, (LDAP_QE_OTHER,
-                   'Exception while querying BDII [%s]' % ldap_url, str(e))
+        return 0, (
+            LDAP_QE_OTHER,
+            "Exception while querying BDII [%s]" % ldap_url,
+            str(e),
+        )
 
 
-def __ldap_CLI(ldap_filter, ldap_attrlist, ldap_url, ldap_base, ldap_timelimit,
-               net_timetout):
+def __ldap_CLI(
+    ldap_filter, ldap_attrlist, ldap_url, ldap_base, ldap_timelimit, net_timetout
+):
     """Query LDAP using CLI.
 
     For signature see L{query_bdii()}
     """
 
     if not isinstance(ldap_attrlist, list):
-        stsmsg = detmsg = 'Error invoking LDAP search CPI: attributes ' + \
-            'list should be a list.'
+        stsmsg = detmsg = (
+            "Error invoking LDAP search CPI: attributes " + "list should be a list."
+        )
         return (0, (LDAP_QE_OTHER, stsmsg, detmsg))
 
     bdii = to_full_bdii_url(ldap_url)
 
-    cmd = "ldapsearch -l %i -x -LLL -h %s -b %s %s %s" % \
-        (ldap_timelimit, bdii, ldap_base, ldap_filter,
-         ' '.join([x for x in ldap_attrlist]))
+    cmd = "ldapsearch -l %i -x -LLL -h %s -b %s %s %s" % (
+        ldap_timelimit,
+        bdii,
+        ldap_base,
+        ldap_filter,
+        " ".join([x for x in ldap_attrlist]),
+    )
 
-    res = ''
+    res = ""
     try:
 
-        res = subprocess.check_output(cmd.split(' '))
-        res = res.decode(encoding='utf-8', errors='strict')
+        res = subprocess.check_output(cmd.split(" "))
+        res = res.decode(encoding="utf-8", errors="strict")
 
     except ErrLDAPTimeout:
-        stsmsg = detmsg = 'LDAP search timed out after %i sec. %s' % \
-            (ldap_timelimit, bdii)
+        stsmsg = detmsg = "LDAP search timed out after %i sec. %s" % (
+            ldap_timelimit,
+            bdii,
+        )
         return (0, (LDAP_QE_TIMEOUT, stsmsg, detmsg))
     except Exception as e:
-        stsmsg = '%s %s' % (str(e).strip(), bdii)
-        detmsg = '%s\n%s' % (cmd, stsmsg)
+        stsmsg = "%s %s" % (str(e).strip(), bdii)
+        detmsg = "%s\n%s" % (cmd, stsmsg)
         return (0, (LDAP_QE_LDAP, stsmsg, detmsg))
 
     if res:
         # remove line foldings made by ldapsearch
-        res = res.replace('\n ', '').strip()
+        res = res.replace("\n ", "").strip()
         entries = []
-        res = res.split('dn: ')
+        res = res.split("dn: ")
         # loop through values in "dn:"
         for dn in res:
             if dn:
@@ -155,7 +177,7 @@ def __ldap_CLI(ldap_filter, ldap_attrlist, ldap_url, ldap_base, ldap_timelimit,
                 # of Glue "Attribute: Value" pairs
                 d = {}
                 for x in dl[1:]:
-                    t = x.split(':', 1)
+                    t = x.split(":", 1)
                     t[0] = t[0].strip()
                     t[1] = t[1].strip()
                     if t[0] in d:
@@ -165,21 +187,21 @@ def __ldap_CLI(ldap_filter, ldap_attrlist, ldap_url, ldap_base, ldap_timelimit,
                 entries.append((dl[0], d))
         return (1, (entries))
     else:
-        return __return_query_failed_emtpy_set(ldap_url, ldap_attrlist,
-                                               ldap_filter, ldap_base)
+        return __return_query_failed_emtpy_set(
+            ldap_url, ldap_attrlist, ldap_filter, ldap_base
+        )
 
 
-def __return_query_failed_emtpy_set(
-        ldap_url,
-        ldap_attrlist,
-        ldap_filter,
-        ldap_base):
+def __return_query_failed_emtpy_set(ldap_url, ldap_attrlist, ldap_filter, ldap_base):
     """Formatted output on empty set returned by a query."""
     ldap_url = ldap_url2hostname_ip(ldap_url)
-    stsmsg = 'No information for [attribute(s): %s] in %s.' % \
-        (ldap_attrlist, ldap_url)
-    detmsg = 'No information for [base: %s; filter: %s; attribute(s): %s] in %s.' % (
-        ldap_base, ldap_filter, ldap_attrlist, ldap_url)
+    stsmsg = "No information for [attribute(s): %s] in %s." % (ldap_attrlist, ldap_url)
+    detmsg = "No information for [base: %s; filter: %s; attribute(s): %s] in %s." % (
+        ldap_base,
+        ldap_filter,
+        ldap_attrlist,
+        ldap_url,
+    )
     return (0, (LDAP_QE_EMPTYSET, stsmsg, detmsg))
 
 
@@ -206,19 +228,22 @@ def get_working_ldap(ldaps, net_timeout=LDAP_TIMEOUT_NETWORK):
     """
 
     if not isinstance(ldaps, list):
-        raise TypeError('ldaps should be a list object.')
+        raise TypeError("ldaps should be a list object.")
     len(ldaps)
     if len(ldaps) == 0:
-        raise ValueError('Empty LDAP endpoints list given (%s()).' %
-                         sys._getframe(0).f_code.co_name)
+        raise ValueError(
+            "Empty LDAP endpoints list given (%s())." % sys._getframe(0).f_code.co_name
+        )
     else:
         i = 0
         for v in ldaps:
             if not v:
                 i += 1
         if i == len(ldaps):
-            raise ValueError('List of empty LDAP endpoints given (%s()).' %
-                             sys._getframe(0).f_code.co_name)
+            raise ValueError(
+                "List of empty LDAP endpoints given (%s())."
+                % sys._getframe(0).f_code.co_name
+            )
     failed_ldaps = {}
     for ldap_url in ldaps:
         proto, hostname, port = parse_uri3(ldap_url)
@@ -230,16 +255,16 @@ def get_working_ldap(ldaps, net_timeout=LDAP_TIMEOUT_NETWORK):
             continue
         else:
             for ip in ips:
-                ldap_url_ip = '%s%s:%s' % (proto or '', ip, port)
+                ldap_url_ip = "%s%s:%s" % (proto or "", ip, port)
 
                 rc, error = __ldap_bind_CLI(ldap_url_ip, net_timeout)
                 if rc:
                     return ldap_url_ip
                 host_ip = ldap_url2hostname_ip(ldap_url_ip)
                 failed_ldaps[host_ip] = error
-    msg = ''
+    msg = ""
     for k, v in failed_ldaps.items():
-        msg = '%s* %s: %s' % (msg and msg + '\n' or '', k, v)
+        msg = "%s* %s: %s" % (msg and msg + "\n" or "", k, v)
     raise LookupError(msg)
 
 
@@ -256,16 +281,16 @@ def __ldap_bind_CLI(url, net_timeout):
       - on failure: C{(0, 'error message')}
     @rtype: L{tuple}
     """
-    cmd = 'ldapsearch -xLLL -h %s' % (to_full_bdii_url(url))
+    cmd = "ldapsearch -xLLL -h %s" % (to_full_bdii_url(url))
 
     rc = subprocess.call(cmd.split(" "))
 
     if rc not in (0, 32):  # No such object (32)
-        return 0, '%i' % (rc)
-    return 1, ''
+        return 0, "%i" % (rc)
+    return 1, ""
 
 
-def to_full_ldap_url(url, port='2170'):
+def to_full_ldap_url(url, port="2170"):
     """Given LDAP url return full LDAP uri.
     Keyword argument C{port} is used if url:port wasn't found in the given url.
 
@@ -273,13 +298,13 @@ def to_full_ldap_url(url, port='2170'):
     """
     hp = parse_uri3(url)
     if not hp[0]:
-        hp[0] = 'ldap://'
+        hp[0] = "ldap://"
     if not hp[2]:
         hp[2] = port
-    return '%s%s:%s' % (hp[0], hp[1], hp[2])
+    return "%s%s:%s" % (hp[0], hp[1], hp[2])
 
 
-def to_full_bdii_url(url, port='2170'):
+def to_full_bdii_url(url, port="2170"):
     """Given url return <url:hostname>:<url:port>.
 
     @return: <url:hostname>:<url:port>.
@@ -287,7 +312,7 @@ def to_full_bdii_url(url, port='2170'):
     hp = parse_uri(url)
     if not hp[1]:
         hp[1] = port
-    return '%s:%s' % (hp[0], hp[1])
+    return "%s:%s" % (hp[0], hp[1])
 
 
 def dns_lookup_reverse(ip):
@@ -304,7 +329,7 @@ def dns_lookup_reverse(ip):
     try:
         socket.inet_aton(ip)
     except socket.error:
-        raise ValueError('Not valid IP address given: %r' % ip)
+        raise ValueError("Not valid IP address given: %r" % ip)
     try:
         hostname, _, _ = socket.gethostbyaddr(ip)
     except (socket.gaierror, socket.herror) as e:
@@ -324,10 +349,9 @@ def ldap_url2hostname_ip(ldap_url):
         socket.inet_aton(host)
         hostname = dns_lookup_reverse(host)
     except (socket.error, IOError):
-        return '[ldap://%s%s]' % (host, port and ':' + port or '')
+        return "[ldap://%s%s]" % (host, port and ":" + port or "")
     else:
-        return '[ldap://%s%s [%s]]' % (hostname, port and ':' + port or '',
-                                       host)
+        return "[ldap://%s%s [%s]]" % (hostname, port and ":" + port or "", host)
 
 
 def dns_lookup_forward(hostname):
@@ -342,7 +366,7 @@ def dns_lookup_forward(hostname):
       - IOError - on any IP address resolution errors
     """
     if not hostname:
-        raise ValueError('Empty hostname provided.')
+        raise ValueError("Empty hostname provided.")
     try:
         _, _, ips = socket.gethostbyname_ex(hostname)
     except (socket.gaierror, socket.herror) as e:
@@ -365,7 +389,7 @@ def parse_uri(uri):
     :return: [host, port]
     :rtype: `list`
     """
-    match = re.match(r'([a-zA-Z0-9_]*://)?([^/:$]*):?(\d+)?/?', uri)
+    match = re.match(r"([a-zA-Z0-9_]*://)?([^/:$]*):?(\d+)?/?", uri)
     return [match.group(2), match.group(3)]
 
 
@@ -373,7 +397,7 @@ parse_uri2 = parse_uri
 "alias to `parse_uri()`; two-element list [host, port] is returned."
 
 
-def uuidstr(len=12, chars='0123456789abcdef'):
+def uuidstr(len=12, chars="0123456789abcdef"):
     """Pseudo-random string of a given length based on a set of chars.
 
     :param len: length of string to be generated
@@ -382,7 +406,7 @@ def uuidstr(len=12, chars='0123456789abcdef'):
     :type chars: `str`
     :return: `str`
     """
-    return ''.join([choice(chars) for i in range(len)])
+    return "".join([choice(chars) for i in range(len)])
 
 
 def parse_uri3(uri):
@@ -392,5 +416,5 @@ def parse_uri3(uri):
     :return: [proto, host, port]
     :rtype: `list`
     """
-    m = re.match(r'([a-zA-Z0-9_]*://)?([^/:$]*):?(\d+)?/?', uri)
+    m = re.match(r"([a-zA-Z0-9_]*://)?([^/:$]*):?(\d+)?/?", uri)
     return [m.group(1), m.group(2), m.group(3)]
