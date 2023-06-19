@@ -40,7 +40,7 @@ app.add_argument(
     "--ldap-url",
     help="LDAP URL",
     dest="ldap_url",
-    default="ldap://lcg-bdii.cern.ch:2170",
+    default="ldap://lcg-bdii.egi.eu:2170",
 )
 app.add_argument(
     "--se-timeout",
