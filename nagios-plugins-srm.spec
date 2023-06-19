@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.6
+Version:    0.0.7
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -55,6 +55,9 @@ rm -rf %{buildroot}
 %doc LICENSE README.md
 
 %changelog
+* Mon Jun 19 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.7-0
+- updated default top BDII adress
+
 * Mon Mar 13 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.6-0
 - py3 only version
 - added support for srm+https and srm+root
