@@ -22,7 +22,7 @@ jobs:
           cd build
           make rpm -f ../Makefile 
           #rpmlint --file .rpmlint.ini out/noarch/*.rpm
-          ls -l
+          ls -lR
       - name: Upload rpms
         uses: actions/upload-artifact@v3
         with:
