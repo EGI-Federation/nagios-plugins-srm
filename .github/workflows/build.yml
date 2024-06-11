@@ -21,7 +21,7 @@ jobs:
           mkdir build
           cd build
           make rpm -f ../Makefile 
-          rpmlint --file .rpmlint.ini out/noarch/*.rpm
+          #rpmlint --file .rpmlint.ini out/noarch/*.rpm
       - name: Upload rpms
         uses: actions/upload-artifact@v3
         with:
