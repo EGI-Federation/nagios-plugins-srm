@@ -27,7 +27,7 @@ jobs:
         with:
           name: rpms7
           path: |
-            build/RPMS/noarch/nagios-*.el7.x86_64.rpm
+            build/out/noarch/nagios-*.el7.x86_64.rpm
 
   build-almalinux9:
     name: Build AlmaLinux 9 RPMs
@@ -51,7 +51,7 @@ jobs:
         with:
           name: rpms9
           path: |
-            build/RPMS/noarch/nagios-*.el9.x86_64.rpm
+            build/out/noarch/noarch/nagios-*.el9.x86_64.rpm
 
   centos7-install:
     name: Install CentOS 7 RPMs
