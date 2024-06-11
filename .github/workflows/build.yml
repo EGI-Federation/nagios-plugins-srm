@@ -27,7 +27,7 @@ jobs:
         with:
           name: rpms7
           path: |
-            out/noarch/nagios-*.el7.x86_64.rpm
+            out/noarch/nagios-*.el7.noarch.rpm
 
   build-almalinux9:
     name: Build AlmaLinux 9 RPMs
