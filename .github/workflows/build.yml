@@ -18,7 +18,9 @@ jobs:
           yum install -y rpm-build rpmlint make rsync
       - name: build rpm
         run: |
-          make rpm
+          mkdir build
+          cd build
+          make rpm -f ../Makefile 
           rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
       - name: Upload rpms
         uses: actions/upload-artifact@v3
@@ -40,7 +42,9 @@ jobs:
           dnf install -y rpm-build rpmlint make rsync systemd-rpm-macros
       - name: build rpm
         run: |
-          make clean rpm
+          mkdir build
+          cd build
+          make rpm -f ../Makefile
           rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
       - name: Upload RPMs
         uses: actions/upload-artifact@v3
