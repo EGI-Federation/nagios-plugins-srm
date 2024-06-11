@@ -1,0 +1,80 @@
+---
+name: Create packages and test installation
+
+on:
+  pull_request:
+
+jobs:
+  centos7:
+    name: Build CentOS 7 RPMs
+    runs-on: ubuntu-latest
+    container: quay.io/centos/centos:7
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install build requisites
+        run: |
+          yum install -y rpm-build rpmlint make rsync
+      - name: build rpm
+        run: |
+          make rpm
+          rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
+      - name: Upload rpms
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms7
+          path: |
+            build/RPMS/noarch/nagios-*.el7.x86_64.rpm
+
+  build-almalinux9:
+    name: Build AlmaLinux 9 RPMs
+    runs-on: ubuntu-latest
+    container: almalinux:9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install build requisites
+        run: |
+          dnf install -y rpm-build rpmlint make rsync systemd-rpm-macros
+      - name: build rpm
+        run: |
+          make clean rpm
+          rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms9
+          path: |
+            build/RPMS/noarch/nagios-*.el9.x86_64.rpm
+
+  centos7-install:
+    name: Install CentOS 7 RPMs
+    needs: centos7
+    runs-on: ubuntu-latest
+    container: quay.io/centos/centos:7
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rpms7
+      - name: Install generated RPMs
+        run: |
+          yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+          yum install -y http://repository.egi.eu/sw/production/umd/4/centos7/x86_64/updates/umd-release-4.1.3-1.el7.centos.noarch.rpm
+          yum localinstall -y ui-*.rpm
+
+  install-almalinux9:
+    name: Install AlmaLinux 9 RPMs
+    needs: build-almalinux9
+    runs-on: ubuntu-latest
+    container: almalinux:9
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rpms9
+      - name: Install generated RPMs
+        run: |
+          # FIXME: remove external repo when UMD5 is available 
+          dnf install -y epel-release
+          dnf localinstall -y nagios-*.rpm
