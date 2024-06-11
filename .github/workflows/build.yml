@@ -21,13 +21,13 @@ jobs:
           mkdir build
           cd build
           make rpm -f ../Makefile 
-          rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
+          rpmlint --file .rpmlint.ini out/noarch/*.rpm
       - name: Upload rpms
         uses: actions/upload-artifact@v3
         with:
           name: rpms7
           path: |
-            build/out/noarch/nagios-*.el7.x86_64.rpm
+            out/noarch/nagios-*.el7.x86_64.rpm
 
   build-almalinux9:
     name: Build AlmaLinux 9 RPMs
