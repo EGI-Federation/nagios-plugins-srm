@@ -1,55 +1,41 @@
-NAME=nagios-plugins-srm
-SPEC=../$(NAME).spec
-VERSION=${shell grep '^Version:' $(SPEC) | awk '{print $$2}' }
-# Leave blank. To be overriden by CI tools.
-RELEASE=
+NAME= $(shell grep Name: *.spec | sed 's/^[^:]*:[^a-zA-Z]*//')
+VERSION= $(shell grep Version: *.spec | sed 's/^[^:]*:[^0-9]*//')
+RELEASE= $(shell grep Release: *.spec | cut -d"%" -f1 | sed 's/^[^:]*:[^0-9]*//')
+build=$(shell pwd)/build
+DATE=$(shell date "+%a, %d %b %Y %T %z")
+dist=$(shell rpm --eval '%dist' | sed 's/%dist/.el5/')
 
-CWD=${shell pwd}
+default:
+	@echo "Nothing to do"
 
-RPMBUILD=/tmp/rpmbuild
-SRPMS=$(CWD)
-RPMS=$(CWD)/out
+install:
+	@echo installing ...
 
-MOCK_CHROOT=epel-6-x86_64
-MOCK_FLAGS=--verbose
+dist:
+	@mkdir -p  $(build)/$(NAME)-$(VERSION)/
+	rsync -HaS --exclude ".git" --exclude "$(build)" * $(build)/$(NAME)-$(VERSION)/
+	cd $(build); tar --gzip -cf $(NAME)-$(VERSION).tar.gz $(NAME)-$(VERSION)/; cd -
 
+sources: dist
+	cp $(build)/$(NAME)-$(VERSION).tar.gz .
 
-RPMDEFINES_SRC=--define='_topdir $(RPMBUILD)' \
-	--define='_sourcedir $(CWD)' \
-	--define='_builddir %{_topdir}/BUILD' \
-	--define='_srcrpmdir $(SRPMS)' \
-	--define='_rpmdir $(RPMS)'
+prepare: dist
+	@mkdir -p  $(build)/RPMS/noarch
+	@mkdir -p  $(build)/SRPMS/
+	@mkdir -p  $(build)/SPECS/
+	@mkdir -p  $(build)/SOURCES/
+	@mkdir -p  $(build)/BUILD/
+	cp $(build)/$(NAME)-$(VERSION).tar.gz $(build)/SOURCES
+	cp $(NAME).spec $(build)/SPECS
 
-RPMDEFINES_BIN=--define='_topdir $(RPMBUILD)' \
-	--define='_sourcedir %{_topdir}/SOURCES' \
-	--define='_builddir %{_topdir}/BUILD' \
-	--define='_srcrpmdir $(SRPMS).' \
-	--define='_rpmdir $(RPMS)'
-
-
-all: srpm
-
-clean:
-	rm -fv *.tar.gz
-	rm -fv *.rpm
-	rm -fv *.log
-	rm -rfv out
-	rm -rfv "$(RPMBUILD)"
-
-dist: clean
-	tar vczf "$(NAME)-$(VERSION).tar.gz" --exclude="build" --exclude=".github" --exclude=".git" --exclude="*.pyc" --transform="s,^,$(NAME)-$(VERSION)/," ..
-
-$(RPMBUILD):
-	mkdir -p "$(RPMBUILD)"
-
-override_release: $(SPEC)
-	$(if $(RELEASE), sed -i "s/Release:.*/Release: $(RELEASE)/g" "$(SPEC)")
-
-srpm: dist $(SPEC) $(RPMBUILD) override_release
-	/usr/bin/rpmbuild --nodeps -bs $(RPMDEFINES_SRC) $(SPEC)
+srpm: prepare
+	rpmbuild -bs --define="dist ${dist}" --define='_topdir ${build}' $(build)/SPECS/$(NAME).spec
 
 rpm: srpm
-	/usr/bin/rpmbuild --rebuild $(RPMDEFINES_BIN) $(NAME)-$(VERSION)-*.src.rpm
+	rpmbuild --rebuild  --define='_topdir ${build}' --define="dist ${dist}" $(build)/SRPMS/$(NAME)-$(VERSION)-$(RELEASE)${dist}.src.rpm
 
-mock: srpm
-	/usr/bin/mock $(MOCK_FLAGS) -r $(MOCK_CHROOT) $(NAME)-$(VERSION)-*.src.rpm
+clean:
+	rm -f *~ $(NAME)-$(VERSION).tar.gz
+	rm -rf $(build)
+
+.PHONY: dist srpm rpm sources clean

@@ -17,7 +17,6 @@ Source0:   %{name}-%{version}.tar.gz
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 
-BuildRequires:  cmake
 Requires:   nagios
 Requires:   python3
 Requires:   openldap-clients
@@ -36,15 +35,12 @@ This package provides the nagios probes for SRM.
 %setup -q -n %{name}-%{version}
 
 %build
-%cmake . -DCMAKE_INSTALL_PREFIX=/
 
-make %{?_smp_mflags}
 
 %install
-rm -rf %{buildroot}
-mkdir -p %{buildroot}
-
 make install DESTDIR=%{buildroot}
+mkdir -p %{buildroot}%{_libdir}/nagios/plugins/srm
+cp --preserve=timestamps plugins/*.py %{buildroot}%{_libdir}/nagios/plugins/srm
 
 %clean
 rm -rf %{buildroot}
