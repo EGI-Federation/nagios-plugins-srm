@@ -45,7 +45,7 @@ jobs:
         with:
           name: rpms9
           path: |
-            build/RPMS/noarch/nagios-*.el9.x86_64.rpm
+            build/RPMS/noarch/nagios-*.el9.noarch.rpm
 
   centos7-install:
     name: Install CentOS 7 RPMs
