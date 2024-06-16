@@ -60,7 +60,7 @@ jobs:
         run: |
           yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
           yum install -y http://repository.egi.eu/sw/production/umd/4/centos7/x86_64/updates/umd-release-4.1.3-1.el7.centos.noarch.rpm
-          yum localinstall -y ui-*.rpm
+          yum localinstall -y nagios-*.rpm
 
   install-almalinux9:
     name: Install AlmaLinux 9 RPMs
