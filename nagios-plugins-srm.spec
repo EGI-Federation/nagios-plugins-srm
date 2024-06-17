@@ -5,7 +5,7 @@
 %define nagios_plugins_dir %{_libdir}/nagios/plugins
 
 Name:       nagios-plugins-srm
-Version:    0.0.7
+Version:    0.1.0
 Release:    1%{?dist}
 Summary:    Nagios probes to be run remotely against SRM mendpoints
 License:    ASL 2.0
@@ -50,7 +50,10 @@ rm -rf %{buildroot}
 %{nagios_plugins_dir}/srm
 %doc LICENSE README.md
 
-%changelog
+%changeloga
+* Mon Jun 17 2024 Andrea Manzi <andrea.manzi@egi.eu> - 0.1.0-0
+- build for EL9
+
 * Mon Jun 19 2023 Andrea Manzi <andrea.manzi@egi.eu> - 0.0.7-0
 - updated default top BDII adress
 
