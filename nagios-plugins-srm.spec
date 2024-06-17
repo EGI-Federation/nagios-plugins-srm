@@ -50,7 +50,7 @@ rm -rf %{buildroot}
 %{nagios_plugins_dir}/srm
 %doc LICENSE README.md
 
-%changeloga
+%changelog
 * Mon Jun 17 2024 Andrea Manzi <andrea.manzi@egi.eu> - 0.1.0-0
 - build for EL9
 
