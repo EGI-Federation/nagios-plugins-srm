@@ -1,0 +1,110 @@
+---
+# When a tag is created
+# - create a new release from the tag
+# - build and attach packages to the release
+name: Create packages and release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  centos7:
+    name: Build centOS 7 RPMs
+    runs-on: ubuntu-latest
+    container: centos:7
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: install build requisites
+        run: |
+          yum install -y rpm-build rpmlint make rsync
+      - name: build rpm
+        run: |
+          make rpm
+          rpmlint --file .rpmlint.ini build/RPMS/noarch/*.rpm
+      - name: Upload rpms
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms7
+          path: |
+            build/RPMS/noarch/nagios-*.el7.x86_64.rpm
+            build/SRPMS/nagios-*.el7.src.rpm
+
+  almalinux9:
+    name: Build AlmaLinux 9 RPMs
+    runs-on: ubuntu-latest
+    container: almalinux:9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install build requisites
+        run: |
+          dnf install -y rpm-build make rsync systemd-rpm-macros
+      - name: build rpm
+        run: |
+          make clean rpm
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpms9
+          path: |
+            build/RPMS/noarch/nagios-*.el9.x86_64.rpm
+            build/SRPMS/nagios-*.el9.src.rpm
+
+  release7:
+    name: Upload CentOS 7 release artefacts
+    needs: centos7
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rpms7
+
+      - name: Find package name
+        id: package_name_centos7
+        run: |
+          rpm_path=$(find . -name 'nagios-*.el7.x86_64.rpm')
+          src_path=$(find . -name 'nagios-*.el7.src.rpm')
+          echo "rpm_path=${rpm_path}" >> "$GITHUB_OUTPUT"
+          echo "src_path=${src_path}" >> "$GITHUB_OUTPUT"
+
+      - name: Attach CentOS 7 RPMs to the release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            ${{ steps.package_name_centos7.outputs.rpm_path }}
+            ${{ steps.package_name_centos7.outputs.src_path }}
+
+  release9:
+    name: Upload AlmaLinux 9 release artefacts
+    permissions:
+      contents: write # to upload release asset (softprops/action-gh-release)
+    needs: almalinux9
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: rpms9
+      - name: Find package name
+        id: package_name_almalinux9
+        run: |
+          rpm_path=$(find . -name 'nagios-*.el9.x86_64.rpm')
+          src_path=$(find . -name 'nagios-*.el9.src.rpm')
+          echo "rpm_path=${rpm_path}" >> "$GITHUB_OUTPUT"
+          echo "src_path=${src_path}" >> "$GITHUB_OUTPUT"
+      - name: Attach AlmaLinux 9 RPMs to the release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            ${{ steps.package_name_almalinux9.outputs.rpm_path }}
+            ${{ steps.package_name_almalinux9.outputs.src_path }}
