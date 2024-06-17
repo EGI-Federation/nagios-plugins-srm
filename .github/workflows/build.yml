@@ -75,5 +75,5 @@ jobs:
         run: |
           # FIXME: remove external repo when UMD5 is available 
           dnf install -y epel-release
-          dnf localinstall -y python3-nap-0.1.21-2.el9.noarch.rpm
+          dnf localinstall -y https://github.com/EGI-Federation/nagios-plugins-srm/raw/master/python3-nap-0.1.21-2.el9.noarch.rpm
           dnf localinstall -y nagios-*.rpm
