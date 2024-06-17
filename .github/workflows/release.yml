@@ -30,7 +30,7 @@ jobs:
         with:
           name: rpms7
           path: |
-            build/RPMS/noarch/nagios-*.el7.x86_64.rpm
+            build/RPMS/noarch/nagios-*.el7.noarch.rpm
             build/SRPMS/nagios-*.el7.src.rpm
 
   almalinux9:
@@ -52,7 +52,7 @@ jobs:
         with:
           name: rpms9
           path: |
-            build/RPMS/noarch/nagios-*.el9.x86_64.rpm
+            build/RPMS/noarch/nagios-*.el9.noarch.rpm
             build/SRPMS/nagios-*.el9.src.rpm
 
   release7:
@@ -67,7 +67,7 @@ jobs:
       - name: Find package name
         id: package_name_centos7
         run: |
-          rpm_path=$(find . -name 'nagios-*.el7.x86_64.rpm')
+          rpm_path=$(find . -name 'nagios-*.el7.noarch.rpm')
           src_path=$(find . -name 'nagios-*.el7.src.rpm')
           echo "rpm_path=${rpm_path}" >> "$GITHUB_OUTPUT"
           echo "src_path=${src_path}" >> "$GITHUB_OUTPUT"
@@ -95,7 +95,7 @@ jobs:
       - name: Find package name
         id: package_name_almalinux9
         run: |
-          rpm_path=$(find . -name 'nagios-*.el9.x86_64.rpm')
+          rpm_path=$(find . -name 'nagios-*.el9.noarch.rpm')
           src_path=$(find . -name 'nagios-*.el9.src.rpm')
           echo "rpm_path=${rpm_path}" >> "$GITHUB_OUTPUT"
           echo "src_path=${src_path}" >> "$GITHUB_OUTPUT"
